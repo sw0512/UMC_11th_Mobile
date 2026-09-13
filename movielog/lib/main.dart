@@ -25,38 +25,84 @@ class StartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const purple = Color(0xFF593C98);
+    const background = Color(0xFFFAF8F4);
+
     return Scaffold(
+      backgroundColor: background,
       body: SafeArea(
-        child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(
+              const SizedBox(height: 0),
+
+              const Text(
+                'FLUTTER 0주차',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF55515D),
+                  letterSpacing: 1.2,
+                ),
+              ),
+
+              const SizedBox(height: 45),
+
+              const Icon(
                 Icons.movie_outlined,
-                size: 72,
-                color: Colors.deepPurple,
+                size: 64,
+                color: purple,
                 semanticLabel: '영화 아이콘',
               ),
-              SizedBox(height: 16),
-              Text(
-                '영화의 순간을 기록하세요',
+
+              const SizedBox(height: 55),
+
+              const Text(
+                '영화의 순간을\n기록하세요',
                 textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 32,
+                  height: 1.3,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF1D1D1B),
+                ),
               ),
-              SizedBox(height: 8),
-              Text(
-                '보고 싶은 영화부터 나만의 평점까지 한곳에서 관리해요',
+
+              const SizedBox(height: 20),
+
+              const Text(
+                '보고 싶은 영화부터 나만의 평점까지\n한곳에서 관리해요',
                 textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 17,
+                  height: 1.5,
+                  color: Color(0xFF55515D),
+                ),
               ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  debugPrint('시작하기 버튼 클릭');
-                },
-                child: Text('시작하기'),
+
+              const Spacer(),
+
+              SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    debugPrint('시작하기 버튼을 눌렀습니다.');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: purple,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: const Text('시작하기', style: TextStyle(fontSize: 18)),
+                ),
               ),
+
+              const SizedBox(height: 16),
             ],
           ),
         ),
