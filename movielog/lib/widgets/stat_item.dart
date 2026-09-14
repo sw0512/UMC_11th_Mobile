@@ -19,10 +19,17 @@ class StatItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(value, style: textTheme.titleLarge),
+          Text(label, style: textTheme.bodyMedium),
           const SizedBox(height: 4),
-          Text(label),
+          Text(
+            value,
+            style: textTheme.titleLarge?.copyWith(
+              color: colors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

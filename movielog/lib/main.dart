@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'theme/app_theme.dart';
+import 'screens/profile_screen.dart';
 
 void main() {
   for (final movie in movies) {
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(theme: AppTheme.light, home: const StartScreen());
+    return MaterialApp(theme: AppTheme.light, home: const ProfileScreen());
   }
 }
 
