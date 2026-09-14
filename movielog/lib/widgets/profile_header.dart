@@ -11,10 +11,13 @@ class ProfileHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const CircleAvatar(
-          radius: 48,
-          backgroundColor: AppColors.violet,
-          child: Icon(Icons.person, size: 48, color: AppColors.white),
+        ClipOval(
+          child: Image.asset(
+            'assets/images/profile/profile_movielog.jpg',
+            width: 96,
+            height: 96,
+            fit: BoxFit.cover,
+          ),
         ),
         const SizedBox(height: 16),
         const Text('무비러버', style: AppTextStyles.titleLarge),
