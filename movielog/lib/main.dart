@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'theme/app_theme.dart';
+import 'screens/profile_screen.dart';
+
+import 'package:flutter_svg/flutter_svg.dart';
+
 void main() {
   for (final movie in movies) {
     debugPrint(movie.title);
@@ -16,7 +21,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: StartScreen());
+    return MaterialApp(theme: AppTheme.light, home: const ProfileScreen());
   }
 }
 
@@ -50,11 +55,11 @@ class StartScreen extends StatelessWidget {
 
               const SizedBox(height: 45),
 
-              const Icon(
-                Icons.movie_outlined,
-                size: 64,
-                color: purple,
-                semanticLabel: '영화 아이콘',
+              SvgPicture.asset(
+                'assets/logos/movielog_logo.svg',
+                width: 72,
+                height: 72,
+                semanticsLabel: 'MovieLog 로고',
               ),
 
               const SizedBox(height: 55),
