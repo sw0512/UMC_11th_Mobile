@@ -9,14 +9,16 @@ class EditProfileButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 40,
-      child: OutlinedButton(
+      child: TextButton(
         onPressed: () {},
-        style: OutlinedButton.styleFrom(
+        style: TextButton.styleFrom(
           foregroundColor: AppColors.violet,
           backgroundColor: AppColors.white,
-          side: const BorderSide(color: AppColors.violet, width: 1),
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: const BorderSide(color: AppColors.violet, width: 1.5),
+          ),
         ),
         child: const Text('프로필 수정'),
       ),

@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
 class StatItem extends StatelessWidget {
-  const StatItem({super.key, required this.label, required this.value});
+  const StatItem({
+    super.key,
+    required this.label,
+    required this.value,
+    this.margin,
+  });
 
   final String label;
   final String value;
+  final EdgeInsetsGeometry? margin;
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +18,7 @@ class StatItem extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
+      margin: margin,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: colors.surface,

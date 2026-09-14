@@ -27,15 +27,25 @@ class ProfileBody extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: StatItem(label: '본 영화', value: '342'),
+                  child: StatItem(
+                    label: '본 영화',
+                    value: '342',
+                    margin: EdgeInsets.only(right: 4),
+                  ),
                 ),
-                SizedBox(width: 8),
                 Expanded(
-                  child: StatItem(label: '평점', value: '4.2'),
+                  child: StatItem(
+                    label: '평점',
+                    value: '4.2',
+                    margin: EdgeInsets.symmetric(horizontal: 4),
+                  ),
                 ),
-                SizedBox(width: 8),
                 Expanded(
-                  child: StatItem(label: '즐겨찾기', value: '58'),
+                  child: StatItem(
+                    label: '즐겨찾기',
+                    value: '58',
+                    margin: EdgeInsets.only(left: 4),
+                  ),
                 ),
               ],
             ),
