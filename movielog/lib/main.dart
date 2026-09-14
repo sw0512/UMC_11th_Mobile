@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'theme/app_theme.dart';
+
 void main() {
   for (final movie in movies) {
     debugPrint(movie.title);
@@ -16,7 +18,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: StartScreen());
+    return MaterialApp(theme: AppTheme.light, home: const StartScreen());
   }
 }
 
