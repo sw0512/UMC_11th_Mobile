@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'theme/app_theme.dart';
-import 'screens/profile_screen.dart';
+import 'screens/sign_up_screen.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(theme: AppTheme.light, home: const ProfileScreen());
+    return MaterialApp(theme: AppTheme.light, home: const SignUpScreen());
   }
 }
 

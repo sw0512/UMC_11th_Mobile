@@ -11,20 +11,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:movielog/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('renders the sign-up screen and enables submission', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('회원가입'), findsOneWidget);
+    expect(find.text('환영합니다!\n간단한 정보만 입력하고 시작해보세요.'), findsOneWidget);
+    expect(find.text('필수 약관에 동의합니다'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.enterText(find.byType(TextFormField).at(0), '무비로그');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'movie@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).at(2), 'password123');
+    await tester.tap(find.byType(Checkbox));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    final button = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, '가입하기'),
+    );
+    expect(button.onPressed, isNotNull);
+
   });
 }
