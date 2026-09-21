@@ -34,5 +34,17 @@ void main() {
     );
     expect(button.onPressed, isNotNull);
 
+    final passwordField = tester.widget<EditableText>(
+      find.byType(EditableText).at(2),
+    );
+    expect(passwordField.obscureText, isTrue);
+
+    await tester.tap(find.byTooltip('비밀번호 표시'));
+    await tester.pump();
+
+    final visiblePasswordField = tester.widget<EditableText>(
+      find.byType(EditableText).at(2),
+    );
+    expect(visiblePasswordField.obscureText, isFalse);
   });
 }

@@ -139,7 +139,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                               const SizedBox(height: 48),
 
-                              SignUpField(
+                              MovieLogTextFormField(
                                 label: '닉네임',
                                 hintText: '닉네임을 입력해주세요',
                                 controller: nicknameController,
@@ -158,7 +158,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                               const SizedBox(height: 16),
 
-                              SignUpField(
+                              MovieLogTextFormField(
                                 label: '이메일',
                                 hintText: '이메일 주소를 입력해주세요',
                                 controller: emailController,
@@ -179,7 +179,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                               const SizedBox(height: 16),
 
-                              SignUpField(
+                              MovieLogTextFormField(
                                 label: '비밀번호',
                                 hintText: '비밀번호를 입력해주세요',
                                 controller: passwordController,
@@ -187,6 +187,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 validator: validatePassword,
                                 touched: passwordTouched,
                                 obscureText: true,
+                                enableObscureTextToggle: true,
                                 textInputAction: TextInputAction.done,
                                 onChanged: (_) {
                                   setState(() {

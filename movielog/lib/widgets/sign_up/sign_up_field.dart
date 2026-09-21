@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 
-class SignUpField extends StatelessWidget {
-  const SignUpField({
+class MovieLogTextFormField extends StatefulWidget {
+  const MovieLogTextFormField({
     super.key,
     required this.label,
     required this.hintText,
@@ -17,6 +18,7 @@ class SignUpField extends StatelessWidget {
     this.textInputAction,
     this.onFieldSubmitted,
     this.obscureText = false,
+    this.enableObscureTextToggle = false,
   });
 
   final String label;
@@ -29,6 +31,7 @@ class SignUpField extends StatelessWidget {
 
   final bool touched;
   final bool obscureText;
+  final bool enableObscureTextToggle;
 
   final ValueChanged<String> onChanged;
   final ValueChanged<String>? onFieldSubmitted;
@@ -37,33 +40,50 @@ class SignUpField extends StatelessWidget {
   final TextInputAction? textInputAction;
 
   @override
-  Widget build(BuildContext context) {
-    final errorMessage = validator(controller.text);
+  State<MovieLogTextFormField> createState() => _MovieLogTextFormFieldState();
+}
 
-    final hasError = touched && errorMessage != null;
+class _MovieLogTextFormFieldState extends State<MovieLogTextFormField> {
+  late bool isObscured = widget.obscureText;
+
+  void toggleObscureText() {
+    setState(() {
+      isObscured = !isObscured;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final errorMessage = widget.validator(widget.controller.text);
+
+    final hasError = widget.touched && errorMessage != null;
 
     final isValid =
-        touched && controller.text.isNotEmpty && errorMessage == null;
+        widget.touched &&
+        widget.controller.text.isNotEmpty &&
+        errorMessage == null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.titleMedium),
+        Text(widget.label, style: AppTextStyles.titleMedium),
 
         const SizedBox(height: 4),
 
         TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          obscureText: obscureText,
-          validator: validator,
+          controller: widget.controller,
+          focusNode: widget.focusNode,
+          keyboardType: widget.keyboardType,
+          textInputAction: widget.textInputAction,
+          obscureText: widget.enableObscureTextToggle
+              ? isObscured
+              : widget.obscureText,
+          validator: widget.validator,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          onChanged: onChanged,
-          onFieldSubmitted: onFieldSubmitted,
+          onChanged: widget.onChanged,
+          onFieldSubmitted: widget.onFieldSubmitted,
           decoration: InputDecoration(
-            hintText: hintText,
+            hintText: widget.hintText,
             hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.hint),
             isDense: true,
             filled: true,
@@ -75,7 +95,23 @@ class SignUpField extends StatelessWidget {
               vertical: 10,
             ),
 
-            suffixIcon: hasError
+            suffixIcon: widget.enableObscureTextToggle
+                ? IconButton(
+                    onPressed: toggleObscureText,
+                    tooltip: isObscured ? '비밀번호 표시' : '비밀번호 숨기기',
+                    icon: SvgPicture.asset(
+                      isObscured
+                          ? 'assets/icons/visibility.svg'
+                          : 'assets/icons/visibility_off.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.hint,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  )
+                : hasError
                 ? const Icon(Icons.error_outline, color: AppColors.error)
                 : isValid
                 ? const Icon(Icons.check_circle, color: AppColors.violet)
