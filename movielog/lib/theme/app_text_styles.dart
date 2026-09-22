@@ -4,21 +4,23 @@ import 'app_colors.dart';
 
 abstract final class AppTextStyles {
   static const titleLarge = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.w700,
-    color: AppColors.black,
+    fontSize: 22,
+    fontWeight: FontWeight.w500,
+    height: 28 / 22,
+    color: AppColors.violet,
   );
 
   static const titleMedium = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.5,
     color: AppColors.black,
   );
 
   static const bodyMedium = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
-    color: AppColors.black,
+    color: AppColors.gray,
     height: 1.5,
   );
 
