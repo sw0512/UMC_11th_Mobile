@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'theme/app_theme.dart';
-import 'screens/sign_up_screen.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'router/app_router.dart';
+
 void main() {
-  for (final movie in movies) {
-    debugPrint(movie.title);
-  }
-
-  final displayNickname = nickname ?? '이름 없음';
-  debugPrint(displayNickname);
-
   runApp(const MyApp());
 }
 
@@ -21,7 +16,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(theme: AppTheme.light, home: const SignUpScreen());
+    return MaterialApp.router(
+      routerConfig: AppRouter.router,
+      theme: AppTheme.light,
+    );
   }
 }
 
@@ -92,9 +90,7 @@ class StartScreen extends StatelessWidget {
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    debugPrint('시작하기 버튼을 눌렀습니다.');
-                  },
+                  onPressed: () => context.go('/sign-up'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: purple,
                     foregroundColor: Colors.white,
@@ -115,18 +111,3 @@ class StartScreen extends StatelessWidget {
     );
   }
 }
-
-class Movie {
-  const Movie({required this.id, required this.title});
-
-  final int id;
-  final String title;
-}
-
-final movies = <Movie>[
-  Movie(id: 1, title: '인셉션'),
-  Movie(id: 2, title: '인터스텔라'),
-  Movie(id: 3, title: '테넷'),
-];
-
-String? nickname;
