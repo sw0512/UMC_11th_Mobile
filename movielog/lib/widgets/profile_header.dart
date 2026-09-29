@@ -11,16 +11,30 @@ class ProfileHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        ClipOval(
-          child: Image.asset(
-            'assets/images/profile/profile_movielog.jpg',
-            width: 96,
-            height: 96,
-            fit: BoxFit.cover,
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.chipBackground,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/profile/profile_movielog.jpg',
+              width: 144,
+              height: 144,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
         const SizedBox(height: 16),
-        const Text('무비러버', style: AppTextStyles.titleLarge),
+        const Text(
+          '무비러버',
+          style: TextStyle(
+            color: AppColors.black,
+            fontSize: 30,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 8),
         Text(
           '매주 주말엔 영화관으로 출근하는 프로 관람객. 좋은 영화를 보고 기록하는 것을 좋아합니다.',
