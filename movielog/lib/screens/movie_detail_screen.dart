@@ -86,7 +86,13 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             leading: IconButton(
               tooltip: '뒤로가기',
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.pop(),
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/movies');
+                }
+              },
             ),
             title: const Text('Cinema Archive'),
             actions: [
