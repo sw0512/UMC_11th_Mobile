@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/common_app_bar.dart';
-import 'rating_screen.dart';
 import '../widgets/sign_up/login_guide.dart';
 import '../widgets/sign_up/sign_up_field.dart';
 import '../widgets/sign_up/sign_up_intro.dart';
@@ -95,8 +95,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // 2주차에서는 실제 API를 연결하지 않음
     debugPrint('회원가입 Form 검증 성공');
 
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const RatingScreen()));
+    context.go('/home');
   }
 
   @override

@@ -8,13 +8,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:movielog/main.dart';
+import 'package:movielog/screens/sign_up_screen.dart';
 
 void main() {
   testWidgets('renders the sign-up screen and enables submission', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MaterialApp(home: SignUpScreen()));
 
     expect(find.text('회원가입'), findsOneWidget);
     expect(find.text('환영합니다!\n간단한 정보만 입력하고 시작해보세요.'), findsOneWidget);
