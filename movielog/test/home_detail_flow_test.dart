@@ -51,6 +51,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(AppRouter.router.canPop(), isFalse);
     await tester.tap(find.byTooltip('뒤로가기'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
     expect(find.text('어떤 영화를 찾고 있나요?'), findsOneWidget);
     expect(tester.takeException(), isNull);
