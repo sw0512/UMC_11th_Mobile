@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:movielog/main.dart';
 import 'package:movielog/router/app_router.dart';
 
+import 'helpers/preference_test_store.dart';
+
 void main() {
+  setUp(resetPreferenceStore);
   testWidgets('opens a movie detail screen from the home card', (tester) async {
     await tester.pumpWidget(const MyApp());
 
