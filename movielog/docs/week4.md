@@ -45,4 +45,10 @@ Loading, Empty, Error/재시도, Success 화면과 앱 재실행 후 장르 복�
 | --- | --- |
 | ![Success](week4-images/success.png) | ![SF 복원](week4-images/restored-genre.png) |
 
-화면 캡처는 준비되어 있습니다. 제출용 재시도·앱 재실행 영상과 PR 링크는 별도로 준비해야 합니다.
+## 시연 영상과 PR
+
+- [오류 → 재시도 → Loading → Success 영상](week4-videos/error-retry.mp4)
+- [SF 선택 → 앱 완전 종료 → 재실행 → SF 복원 영상](week4-videos/genre-restore.mp4)
+- [4주차 PR #5](https://github.com/sw0512/UMC_11th_Mobile/pull/5)
+
+두 영상은 iPhone 17 시뮬레이터에서 실제 앱을 조작해 녹화했습니다. 장르 복원 영상은 앱을 완전히 종료한 뒤 다시 실행하는 과정을 포함합니다. 영상 재생 및 마지막 결과 화면을 확인했습니다.
