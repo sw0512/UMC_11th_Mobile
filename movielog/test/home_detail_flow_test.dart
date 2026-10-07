@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:movielog/main.dart';
 import 'package:movielog/router/app_router.dart';
 
+import 'helpers/preference_test_store.dart';
+
 void main() {
+  setUp(resetPreferenceStore);
   testWidgets('opens a movie detail screen from the home card', (tester) async {
     await tester.pumpWidget(const MyApp());
 
@@ -51,6 +54,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(AppRouter.router.canPop(), isFalse);
     await tester.tap(find.byTooltip('뒤로가기'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
     expect(find.text('어떤 영화를 찾고 있나요?'), findsOneWidget);
     expect(tester.takeException(), isNull);
