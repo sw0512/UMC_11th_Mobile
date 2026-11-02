@@ -4,7 +4,13 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../theme/app_colors.dart';
 
 class MovieRatingInput extends StatefulWidget {
-  const MovieRatingInput({super.key, required this.onSaved});
+  const MovieRatingInput({
+    super.key,
+    required this.onSaved,
+    required this.movieId,
+  });
+
+  final int movieId;
 
   final ValueChanged<double> onSaved;
 

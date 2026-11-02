@@ -3,6 +3,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/movie.dart';
+import '../widgets/tmdb_poster_image.dart';
 import '../theme/app_colors.dart';
 import '../widgets/movie_rating_input.dart';
 
@@ -30,6 +31,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     showDialog<void>(
       context: context,
       builder: (_) => MovieRatingInput(
+        movieId: widget.movie.id,
         onSaved: (rating) {
           setState(() => myRating = rating);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -113,10 +115,16 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     borderRadius: BorderRadius.circular(24),
                     child: AspectRatio(
                       aspectRatio: 2 / 3,
-                      child: Image.asset(
-                        movie.posterAssetPath,
-                        fit: BoxFit.cover,
-                      ),
+                      child: movie.posterAssetPath.isEmpty
+                          ? TmdbPosterImage(
+                              posterPath: movie.posterPath,
+                              width: double.infinity,
+                              height: double.infinity,
+                            )
+                          : Image.asset(
+                              movie.posterAssetPath,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -130,7 +138,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '${movie.genreLabel} · ${movie.year} · ${movie.runningTime}분',
+                    [
+                      movie.genreLabel,
+                      if (movie.year > 0) '${movie.year}',
+                      if (movie.runningTime > 0) '${movie.runningTime}분',
+                    ].where((v) => v.isNotEmpty).join(' · '),
                     style: const TextStyle(color: AppColors.gray, fontSize: 16),
                   ),
                   const SizedBox(height: 20),

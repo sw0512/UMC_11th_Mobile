@@ -1,6 +1,7 @@
 class Movie {
   const Movie({
     required this.id,
+    this.posterPath,
     required this.title,
     required this.genres,
     required this.year,
@@ -11,6 +12,7 @@ class Movie {
   });
 
   final int id;
+  final String? posterPath;
   final String title;
   final List<String> genres;
   final int year;
