@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+
+import 'core/network/tmdb_client.dart';
+import 'data/services/tmdb_movie_service.dart';
+
 import 'package:go_router/go_router.dart';
 
 import 'theme/app_theme.dart';
@@ -7,18 +13,30 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'router/app_router.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.movieService});
+
+  final TmdbMovieService? movieService;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: AppRouter.router,
-      theme: AppTheme.light,
+    return MultiProvider(
+      providers: [
+        Provider<TmdbMovieService>(
+          create: (_) => movieService ?? TmdbMovieService(createTmdbClient()),
+        ),
+      ],
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        routerConfig: AppRouter.router,
+        theme: AppTheme.light,
+      ),
     );
   }
 }

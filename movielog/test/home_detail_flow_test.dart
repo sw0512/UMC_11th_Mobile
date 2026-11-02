@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:movielog/main.dart';
 import 'package:movielog/router/app_router.dart';
+import 'package:movielog/widgets/movie_rating_input.dart';
 
 import 'helpers/preference_test_store.dart';
+import 'helpers/tmdb_fixture_service.dart';
 
 void main() {
   setUp(resetPreferenceStore);
   testWidgets('opens a movie detail screen from the home card', (tester) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(movieService: TmdbFixtureService()));
 
     expect(find.text('시작하기'), findsOneWidget);
     await tester.tap(find.text('시작하기'));
@@ -30,15 +32,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(AppRouter.router.canPop(), isFalse);
 
-    expect(find.text('별빛 아래 우리'), findsOneWidget);
+    expect(find.text('영화 101'), findsOneWidget);
 
-    final detailButton = find.widgetWithText(ElevatedButton, '상세보기');
+    final detailButton = find.text('영화 101');
     await tester.ensureVisible(detailButton);
     await tester.tap(detailButton);
     await tester.pumpAndSettle();
 
     expect(find.text('영화 소개'), findsOneWidget);
     expect(find.byTooltip('뒤로가기'), findsOneWidget);
+    await tester.tap(find.text('평점 남기기'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<MovieRatingInput>(find.byType(MovieRatingInput)).movieId, 101);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('뒤로가기'));
     await tester.pumpAndSettle();
@@ -50,7 +57,7 @@ void main() {
     tester,
   ) async {
     AppRouter.router.go('/movies/1');
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(movieService: TmdbFixtureService()));
     await tester.pumpAndSettle();
     expect(AppRouter.router.canPop(), isFalse);
     await tester.tap(find.byTooltip('뒤로가기'));
