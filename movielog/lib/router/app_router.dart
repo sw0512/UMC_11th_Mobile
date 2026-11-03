@@ -16,17 +16,29 @@ import '../screens/movie_list_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/sign_up_screen.dart';
 import '../main.dart';
+import '../data/services/member_check_service.dart';
+import '../data/services/rating_api_service.dart';
+import '../view_models/sign_up_view_model.dart';
+import '../view_models/my_ratings_view_model.dart';
+import '../screens/my_ratings_screen.dart';
 
 class AppRouter {
   AppRouter._();
 
+  static final rootNavigatorKey = GlobalKey<NavigatorState>();
+
   static final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/start',
     routes: [
       GoRoute(path: '/start', builder: (context, state) => const StartScreen()),
       GoRoute(
         path: '/sign-up',
-        builder: (context, state) => const SignUpScreen(),
+        builder: (context, state) => ChangeNotifierProvider(
+          create: (context) =>
+              SignUpViewModel(context.read<MemberCheckService>()),
+          child: const SignUpScreen(),
+        ),
       ),
       GoRoute(
         path: '/home',
@@ -64,6 +76,19 @@ class AppRouter {
         path: '/my',
         builder: (context, state) =>
             const MainScreen(currentIndex: 2, child: ProfileScreen()),
+        routes: [
+          GoRoute(
+            path: 'ratings',
+            parentNavigatorKey: rootNavigatorKey,
+            builder: (context, state) => ChangeNotifierProvider(
+              create: (context) => MyRatingsViewModel(
+                context.read<RatingApiService>(),
+                context.read<TmdbMovieService>(),
+              )..load(),
+              child: const MyRatingsScreen(),
+            ),
+          ),
+        ],
       ),
     ],
   );

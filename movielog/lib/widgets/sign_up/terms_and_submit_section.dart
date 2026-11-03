@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_colors.dart';
+import '../movielog_button.dart';
 import '../../theme/app_text_styles.dart';
 
 class TermsAndSubmitSection extends StatelessWidget {
@@ -51,28 +51,10 @@ class TermsAndSubmitSection extends StatelessWidget {
 
         const SizedBox(height: 24),
 
-        SizedBox(
-          height: 56,
-          child: ElevatedButton(
-            onPressed: canSubmit ? onSubmit : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.violet,
-              disabledBackgroundColor: disabledButtonColor,
-              foregroundColor: AppColors.white,
-              disabledForegroundColor: AppColors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              '가입하기',
-              style: AppTextStyles.titleMedium.copyWith(
-                color: AppColors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
+        MovieLogButton(
+          label: '가입하기',
+          width: double.infinity,
+          onPressed: canSubmit ? onSubmit : null,
         ),
       ],
     );

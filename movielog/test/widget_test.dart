@@ -1,3 +1,7 @@
+import 'package:provider/provider.dart';
+import 'package:movielog/view_models/sign_up_view_model.dart';
+
+import 'helpers/week6_fixture_services.dart';
 // This is a basic Flutter widget test.
 //
 // To perform an interaction with a widget in your test, use the WidgetTester
@@ -14,7 +18,12 @@ void main() {
   testWidgets('renders the sign-up screen and enables submission', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: SignUpScreen()));
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => SignUpViewModel(CheckFixtureService()),
+        child: const MaterialApp(home: SignUpScreen()),
+      ),
+    );
 
     expect(find.text('회원가입'), findsOneWidget);
     expect(find.text('환영합니다!\n간단한 정보만 입력하고 시작해보세요.'), findsOneWidget);
@@ -26,6 +35,11 @@ void main() {
       'movie@example.com',
     );
     await tester.enterText(find.byType(TextFormField).at(2), 'password123');
+    await tester.pump();
+    await tester.tap(find.text('중복 확인').at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('중복 확인').at(1));
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
 
