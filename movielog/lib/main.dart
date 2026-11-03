@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
+
+import 'core/network/movie_log_client.dart';
+import 'data/services/member_check_service.dart';
+import 'data/services/rating_api_service.dart';
 
 import 'core/network/tmdb_client.dart';
 import 'data/services/tmdb_movie_service.dart';
@@ -20,14 +25,33 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, this.movieService});
+  const MyApp({
+    super.key,
+    this.movieService,
+    this.memberCheckService,
+    this.ratingService,
+  });
 
   final TmdbMovieService? movieService;
+  final MemberCheckService? memberCheckService;
+  final RatingApiService? ratingService;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<Dio>(
+          create: (_) => createMovieLogClient(),
+          dispose: (_, client) => client.close(force: true),
+        ),
+        Provider<MemberCheckService>(
+          create: (context) =>
+              memberCheckService ?? MemberCheckService(context.read<Dio>()),
+        ),
+        Provider<RatingApiService>(
+          create: (context) =>
+              ratingService ?? RatingApiService(context.read<Dio>()),
+        ),
         Provider<TmdbMovieService>(
           create: (_) => movieService ?? TmdbMovieService(createTmdbClient()),
         ),

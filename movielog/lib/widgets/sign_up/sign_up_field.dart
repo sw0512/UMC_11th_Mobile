@@ -13,6 +13,8 @@ class MovieLogTextFormField extends StatefulWidget {
     required this.validator,
     required this.touched,
     required this.onChanged,
+    this.serverErrorText,
+    this.serverAvailable,
     this.focusNode,
     this.keyboardType,
     this.textInputAction,
@@ -21,6 +23,8 @@ class MovieLogTextFormField extends StatefulWidget {
     this.enableObscureTextToggle = false,
   });
 
+  final String? serverErrorText;
+  final bool? serverAvailable;
   final String label;
   final String hintText;
 
@@ -56,12 +60,15 @@ class _MovieLogTextFormFieldState extends State<MovieLogTextFormField> {
   Widget build(BuildContext context) {
     final errorMessage = widget.validator(widget.controller.text);
 
-    final hasError = widget.touched && errorMessage != null;
+    final hasError =
+        widget.serverErrorText != null ||
+        (widget.touched && errorMessage != null);
 
     final isValid =
-        widget.touched &&
-        widget.controller.text.isNotEmpty &&
-        errorMessage == null;
+        widget.serverAvailable ??
+        (widget.touched &&
+            widget.controller.text.isNotEmpty &&
+            errorMessage == null);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,6 +86,7 @@ class _MovieLogTextFormFieldState extends State<MovieLogTextFormField> {
               ? isObscured
               : widget.obscureText,
           validator: widget.validator,
+          forceErrorText: widget.serverErrorText,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           onChanged: widget.onChanged,
           onFieldSubmitted: widget.onFieldSubmitted,

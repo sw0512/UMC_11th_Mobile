@@ -1,3 +1,5 @@
+import 'helpers/week6_fixture_services.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:movielog/main.dart';
@@ -10,7 +12,12 @@ import 'helpers/tmdb_fixture_service.dart';
 void main() {
   setUp(resetPreferenceStore);
   testWidgets('opens a movie detail screen from the home card', (tester) async {
-    await tester.pumpWidget(MyApp(movieService: TmdbFixtureService()));
+    await tester.pumpWidget(
+      MyApp(
+        movieService: TmdbFixtureService(),
+        memberCheckService: CheckFixtureService(),
+      ),
+    );
 
     expect(find.text('시작하기'), findsOneWidget);
     await tester.tap(find.text('시작하기'));
@@ -23,6 +30,11 @@ void main() {
       'movie@example.com',
     );
     await tester.enterText(find.byType(TextFormField).at(2), 'password123');
+    await tester.pump();
+    await tester.tap(find.text('중복 확인').at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('중복 확인').at(1));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byType(Checkbox));
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
@@ -43,7 +55,10 @@ void main() {
     expect(find.byTooltip('뒤로가기'), findsOneWidget);
     await tester.tap(find.text('평점 남기기'));
     await tester.pumpAndSettle();
-    expect(tester.widget<MovieRatingInput>(find.byType(MovieRatingInput)).movieId, 101);
+    expect(
+      tester.widget<MovieRatingInput>(find.byType(MovieRatingInput)).movieId,
+      101,
+    );
     await tester.tap(find.text('취소'));
     await tester.pumpAndSettle();
 
@@ -57,7 +72,12 @@ void main() {
     tester,
   ) async {
     AppRouter.router.go('/movies/1');
-    await tester.pumpWidget(MyApp(movieService: TmdbFixtureService()));
+    await tester.pumpWidget(
+      MyApp(
+        movieService: TmdbFixtureService(),
+        memberCheckService: CheckFixtureService(),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(AppRouter.router.canPop(), isFalse);
     await tester.tap(find.byTooltip('뒤로가기'));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'edit_profile_button.dart';
 import 'profile_header.dart';
@@ -10,11 +11,10 @@ class ProfileBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SafeArea(
+    return SafeArea(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
           children: [
             ProfileHeader(),
 
@@ -50,7 +50,15 @@ class ProfileBody extends StatelessWidget {
               ],
             ),
             SizedBox(height: 32),
-            FavoriteGenres(),
+            const FavoriteGenres(),
+            const SizedBox(height: 24),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.star_outline),
+              title: const Text('내가 등록한 평점'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/my/ratings'),
+            ),
           ],
         ),
       ),

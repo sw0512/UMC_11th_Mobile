@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../view_models/sign_up_view_model.dart';
+import '../widgets/movielog_button.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -32,35 +36,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool emailTouched = false;
   bool passwordTouched = false;
 
-  String? validateNickname(String? value) {
-    final nickname = value?.trim() ?? '';
-
-    if (nickname.isEmpty) {
-      return '닉네임을 입력해주세요.';
-    }
-
-    if (nickname.length < 2) {
-      return '닉네임은 2자 이상이어야 합니다.';
-    }
-
-    return null;
-  }
-
-  String? validateEmail(String? value) {
-    final email = value?.trim() ?? '';
-
-    if (email.isEmpty) {
-      return '이메일을 입력해주세요.';
-    }
-
-    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-
-    if (!emailRegex.hasMatch(email)) {
-      return '올바른 이메일 형식이 아닙니다.';
-    }
-
-    return null;
-  }
+  String? validateNickname(String? value) =>
+      SignUpViewModel.validateNickname(value);
+  String? validateEmail(String? value) => SignUpViewModel.validateEmail(value);
 
   String? validatePassword(String? value) {
     final password = value ?? '';
@@ -80,19 +58,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return validateNickname(nicknameController.text) == null &&
         validateEmail(emailController.text) == null &&
         validatePassword(passwordController.text) == null &&
-        agreedToTerms;
+        agreedToTerms &&
+        context.read<SignUpViewModel>().checksAvailable;
   }
 
   void submit() {
     final isValid = formKey.currentState?.validate() ?? false;
 
-    if (!isValid) {
+    if (!isValid || !canSubmit) {
       return;
     }
 
     FocusScope.of(context).unfocus();
 
-    // 2주차에서는 실제 API를 연결하지 않음
+    // v5에는 회원가입 POST가 없습니다. 검증 완료 후 홈으로 이동합니다.
     debugPrint('회원가입 Form 검증 성공');
 
     context.go('/home');
@@ -100,6 +79,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<SignUpViewModel>();
     return Scaffold(
       backgroundColor: AppColors.warmWhite,
       appBar: CommonAppBar(
@@ -142,42 +122,67 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                               const SizedBox(height: 48),
 
-                              MovieLogTextFormField(
+                              _checkedField(
+                                field: MovieLogTextFormField(
+                                  label: '닉네임',
+                                  serverErrorText: viewModel.nicknameErrorText,
+                                  serverAvailable:
+                                      viewModel.nicknameCheckStatus ==
+                                      CheckStatus.available,
+                                  hintText: '닉네임을 입력해주세요',
+                                  controller: nicknameController,
+                                  validator: validateNickname,
+                                  touched: nicknameTouched,
+                                  onChanged: (value) {
+                                    viewModel.onNicknameChanged(value);
+                                    setState(() {
+                                      nicknameTouched = true;
+                                    });
+                                  },
+                                  textInputAction: TextInputAction.next,
+                                  onFieldSubmitted: (_) {
+                                    emailFocusNode.requestFocus();
+                                  },
+                                ),
                                 label: '닉네임',
-                                hintText: '닉네임을 입력해주세요',
-                                controller: nicknameController,
-                                validator: validateNickname,
-                                touched: nicknameTouched,
-                                onChanged: (_) {
-                                  setState(() {
-                                    nicknameTouched = true;
-                                  });
-                                },
-                                textInputAction: TextInputAction.next,
-                                onFieldSubmitted: (_) {
-                                  emailFocusNode.requestFocus();
-                                },
+                                status: viewModel.nicknameCheckStatus,
+                                canCheck: viewModel.canCheckNickname,
+                                onCheck: () => viewModel.checkNickname(
+                                  nicknameController.text,
+                                ),
                               ),
 
                               const SizedBox(height: 16),
 
-                              MovieLogTextFormField(
+                              _checkedField(
+                                field: MovieLogTextFormField(
+                                  label: '이메일',
+                                  serverErrorText: viewModel.emailErrorText,
+                                  serverAvailable:
+                                      viewModel.emailCheckStatus ==
+                                      CheckStatus.available,
+                                  hintText: '이메일 주소를 입력해주세요',
+                                  controller: emailController,
+                                  focusNode: emailFocusNode,
+                                  validator: validateEmail,
+                                  touched: emailTouched,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  onChanged: (value) {
+                                    viewModel.onEmailChanged(value);
+                                    setState(() {
+                                      emailTouched = true;
+                                    });
+                                  },
+                                  onFieldSubmitted: (_) {
+                                    passwordFocusNode.requestFocus();
+                                  },
+                                ),
                                 label: '이메일',
-                                hintText: '이메일 주소를 입력해주세요',
-                                controller: emailController,
-                                focusNode: emailFocusNode,
-                                validator: validateEmail,
-                                touched: emailTouched,
-                                keyboardType: TextInputType.emailAddress,
-                                textInputAction: TextInputAction.next,
-                                onChanged: (_) {
-                                  setState(() {
-                                    emailTouched = true;
-                                  });
-                                },
-                                onFieldSubmitted: (_) {
-                                  passwordFocusNode.requestFocus();
-                                },
+                                status: viewModel.emailCheckStatus,
+                                canCheck: viewModel.canCheckEmail,
+                                onCheck: () =>
+                                    viewModel.checkEmail(emailController.text),
                               ),
 
                               const SizedBox(height: 16),
@@ -234,6 +239,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
+
+  Widget _checkedField({
+    required Widget field,
+    required String label,
+    required CheckStatus status,
+    required bool canCheck,
+    required VoidCallback onCheck,
+  }) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: field),
+          const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(top: 28),
+            child: MovieLogButton(
+              label: '중복 확인',
+              isLoading: status == CheckStatus.checking,
+              onPressed: canCheck ? onCheck : null,
+            ),
+          ),
+        ],
+      ),
+      if (status == CheckStatus.available)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            '사용할 수 있는 $label입니다.',
+            style: const TextStyle(color: Colors.green, fontSize: 12),
+          ),
+        ),
+      if (status == CheckStatus.checking)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            '$label 사용 가능 여부를 확인 중입니다.',
+            style: const TextStyle(color: Colors.blue, fontSize: 12),
+          ),
+        ),
+    ],
+  );
 
   @override
   void dispose() {
