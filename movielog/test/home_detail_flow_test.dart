@@ -5,17 +5,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:movielog/main.dart';
 import 'package:movielog/router/app_router.dart';
 import 'package:movielog/widgets/movie_rating_input.dart';
+import 'package:movielog/widgets/tmdb_movie_card.dart';
 
 import 'helpers/preference_test_store.dart';
 import 'helpers/tmdb_fixture_service.dart';
 
 void main() {
   setUp(resetPreferenceStore);
-  testWidgets('opens a movie detail screen from the home card', (tester) async {
+  testWidgets('signup navigates to movies and opens detail with TMDB ID', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MyApp(
         movieService: TmdbFixtureService(),
-        memberCheckService: CheckFixtureService(),
+        signUpService: CheckFixtureService(),
       ),
     );
 
@@ -29,7 +32,7 @@ void main() {
       find.byType(TextFormField).at(1),
       'movie@example.com',
     );
-    await tester.enterText(find.byType(TextFormField).at(2), 'password123');
+    await tester.enterText(find.byType(TextFormField).at(2), 'Password123!');
     await tester.pump();
     await tester.tap(find.text('중복 확인').at(0));
     await tester.pumpAndSettle();
@@ -46,9 +49,8 @@ void main() {
 
     expect(find.text('영화 101'), findsOneWidget);
 
-    final detailButton = find.text('영화 101');
-    await tester.ensureVisible(detailButton);
-    await tester.tap(detailButton);
+    final card = find.byType(TmdbMovieCard).first;
+    await tester.tapAt(tester.getTopLeft(card) + const Offset(20, 20));
     await tester.pumpAndSettle();
 
     expect(find.text('영화 소개'), findsOneWidget);
@@ -65,7 +67,7 @@ void main() {
     await tester.tap(find.byTooltip('뒤로가기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('오늘은 어떤\n영화를 볼까요?'), findsOneWidget);
+    expect(find.text('어떤 영화를 찾고 있나요?'), findsOneWidget);
   });
 
   testWidgets('direct detail navigation falls back to the movie list', (
@@ -75,7 +77,7 @@ void main() {
     await tester.pumpWidget(
       MyApp(
         movieService: TmdbFixtureService(),
-        memberCheckService: CheckFixtureService(),
+        signUpService: CheckFixtureService(),
       ),
     );
     await tester.pumpAndSettle();

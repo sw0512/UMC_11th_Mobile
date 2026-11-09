@@ -1,27 +1,88 @@
 import 'package:dio/dio.dart';
 
 import '../models/rating_dto.dart';
+import '../models/rating_request.dart';
+import '../models/common_response.dart';
+import '../models/api_failure.dart';
 
 class RatingApiService {
   RatingApiService(this._dio);
   final Dio _dio;
   Future<List<RatingDto>> fetchMyRatings(int memberId) async {
-    final response = await _dio.get<List<dynamic>>(
-      '/v5/members/$memberId/ratings',
-    );
-    return List.unmodifiable(
-      response.data!.map((v) => RatingDto.fromJson(v as Map<String, dynamic>)),
-    );
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        '/v6/members/$memberId/ratings',
+      );
+      return List.unmodifiable(
+        response.data!.map(
+          (v) => RatingDto.fromJson(v as Map<String, dynamic>),
+        ),
+      );
+    } catch (e) {
+      throw ApiFailure.from(e);
+    }
+  }
+
+  Future<void> createRating({
+    required int memberId,
+    required CreateRatingRequest request,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/v6/members/$memberId/ratings',
+        data: request.toJson(),
+      );
+      _checkWrite(response, 201);
+    } catch (e) {
+      throw ApiFailure.from(e);
+    }
+  }
+
+  Future<void> updateRating({
+    required int memberId,
+    required int ratingId,
+    required int score,
+    String? comment,
+  }) async {
+    validateServerScore(score.toDouble());
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/v6/members/$memberId/ratings/$ratingId',
+        data: {'score': score, 'comment': normalizedComment(comment)},
+      );
+      _checkWrite(response, 200);
+    } catch (e) {
+      throw ApiFailure.from(e);
+    }
+  }
+
+  Future<void> deleteRating({
+    required int memberId,
+    required int ratingId,
+  }) async {
+    try {
+      final response = await _dio.delete<void>(
+        '/v6/members/$memberId/ratings/$ratingId',
+      );
+      if (response.statusCode != 204) {
+        throw const ApiFailure('삭제 결과를 확인하지 못했습니다. 목록을 다시 조회해 주세요.');
+      }
+    } catch (e) {
+      throw ApiFailure.from(e);
+    }
+  }
+
+  void _checkWrite(Response<Map<String, dynamic>> response, int expected) {
+    final common = CommonResponse<Object?>.fromJson(response.data!, (v) => v);
+    if (response.statusCode != expected || !common.isSuccess) {
+      throw ApiFailure(
+        common.message,
+        code: common.code,
+        status: response.statusCode,
+      );
+    }
   }
 }
 
-String writeMyRatingsErrorMessage(DioException error) {
-  switch (error.response?.statusCode) {
-    case 400:
-      return 'memberId 형식을 다시 확인해 주세요.';
-    case 404:
-      return '존재하지 않는 회원입니다.';
-    default:
-      return '평점을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
-  }
-}
+String writeMyRatingsErrorMessage(Object error) =>
+    ApiFailure.from(error).message;

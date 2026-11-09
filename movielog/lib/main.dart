@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 
 import 'core/network/movie_log_client.dart';
-import 'data/services/member_check_service.dart';
+import 'data/services/sign_up_service.dart';
+import 'view_models/learning_member_session.dart';
 import 'data/services/rating_api_service.dart';
 
 import 'core/network/tmdb_client.dart';
@@ -28,25 +29,30 @@ class MyApp extends StatelessWidget {
   const MyApp({
     super.key,
     this.movieService,
-    this.memberCheckService,
+    this.signUpService,
+    this.learningSession,
     this.ratingService,
   });
 
   final TmdbMovieService? movieService;
-  final MemberCheckService? memberCheckService;
+  final SignUpService? signUpService;
+  final LearningMemberSession? learningSession;
   final RatingApiService? ratingService;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<LearningMemberSession>(
+          create: (_) => learningSession ?? LearningMemberSession(),
+        ),
         Provider<Dio>(
           create: (_) => createMovieLogClient(),
           dispose: (_, client) => client.close(force: true),
         ),
-        Provider<MemberCheckService>(
+        Provider<SignUpService>(
           create: (context) =>
-              memberCheckService ?? MemberCheckService(context.read<Dio>()),
+              signUpService ?? SignUpService(context.read<Dio>()),
         ),
         Provider<RatingApiService>(
           create: (context) =>

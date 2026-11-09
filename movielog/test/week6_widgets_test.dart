@@ -9,6 +9,8 @@ import 'package:movielog/widgets/movielog_button.dart';
 
 import 'helpers/week6_fixture_services.dart';
 
+import 'package:movielog/view_models/learning_member_session.dart';
+
 void main() {
   testWidgets(
     'server duplicate remains Form error and cached duplicate disables the button',
@@ -113,6 +115,7 @@ void main() {
       await tester.pumpWidget(
         MyApp(
           movieService: DetailFixtureService(),
+          learningSession: LearningMemberSession()..setMemberId(77),
           ratingService: RatingsFixtureService(),
         ),
       );
@@ -126,7 +129,7 @@ void main() {
       await tester.tap(find.text('내가 등록한 평점'));
       await tester.pumpAndSettle();
       expect(find.byType(NavigationBar), findsNothing);
-      expect(find.text('학습용 회원 1번의 공개 평점입니다.'), findsOneWidget);
+      expect(find.text('가입한 학습용 회원의 평점입니다.'), findsOneWidget);
       expect(find.text('영화 550'), findsOneWidget);
       expect(find.text('별점 4 / 5'), findsOneWidget);
       await tester.tap(find.byTooltip('마이페이지로 돌아가기'));

@@ -3,65 +3,28 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 import '../theme/app_colors.dart';
 
-class MovieRatingInput extends StatefulWidget {
+class MovieRatingInput extends StatelessWidget {
   const MovieRatingInput({
     super.key,
-    required this.onSaved,
-    required this.movieId,
+    required this.rating,
+    required this.onChanged,
+    this.enabled = true,
+    this.movieId,
   });
-
-  final int movieId;
-
-  final ValueChanged<double> onSaved;
-
+  final double rating;
+  final ValueChanged<double> onChanged;
+  final bool enabled;
+  final int? movieId;
   @override
-  State<MovieRatingInput> createState() => _MovieRatingInputState();
-}
-
-class _MovieRatingInputState extends State<MovieRatingInput> {
-  double rating = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('평점 남기기'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            rating == 0
-                ? '별점을 선택해주세요.'
-                : '${rating.toStringAsFixed(1)}점을 선택했어요.',
-            style: const TextStyle(color: AppColors.gray),
-          ),
-          const SizedBox(height: 20),
-          RatingBar.builder(
-            initialRating: rating,
-            minRating: .5,
-            allowHalfRating: true,
-            itemCount: 5,
-            itemSize: 34,
-            itemBuilder: (_, _) =>
-                const Icon(Icons.star_rounded, color: Color(0xFFFFB800)),
-            onRatingUpdate: (value) => setState(() => rating = value),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
-        ),
-        FilledButton(
-          onPressed: rating == 0
-              ? null
-              : () {
-                  widget.onSaved(rating);
-                  Navigator.of(context).pop();
-                },
-          child: const Text('저장'),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => RatingBar.builder(
+    initialRating: rating,
+    minRating: 1,
+    allowHalfRating: false,
+    ignoreGestures: !enabled,
+    itemCount: 5,
+    itemSize: 36,
+    itemBuilder: (_, index) =>
+        const Icon(Icons.star_rounded, color: AppColors.violet),
+    onRatingUpdate: onChanged,
+  );
 }

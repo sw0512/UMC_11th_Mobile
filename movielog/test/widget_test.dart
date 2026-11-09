@@ -34,7 +34,7 @@ void main() {
       find.byType(TextFormField).at(1),
       'movie@example.com',
     );
-    await tester.enterText(find.byType(TextFormField).at(2), 'password123');
+    await tester.enterText(find.byType(TextFormField).at(2), 'Password123!');
     await tester.pump();
     await tester.tap(find.text('중복 확인').at(0));
     await tester.pumpAndSettle();
