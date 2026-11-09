@@ -28,7 +28,7 @@ void main() {
         sampleRating(3, 999),
       ];
     final movies = DetailFixtureService()..missing.add(999);
-    final vm = MyRatingsViewModel(service, movies);
+    final vm = MyRatingsViewModel(service, movies, 1);
     await vm.load();
     expect(service.members, [1]);
     expect(movies.detailCalls, [550, 999]);
@@ -47,7 +47,7 @@ void main() {
       final service = RatingsFixtureService()
         ..items = [sampleRating(1, 550), sampleRating(2, 550)];
       final movies = DetailFixtureService()..transient.add(550);
-      final vm = MyRatingsViewModel(service, movies);
+      final vm = MyRatingsViewModel(service, movies, 1);
       await vm.load();
       expect(vm.ratings.length, 2);
       expect(movies.detailCalls, [550]);
@@ -60,7 +60,7 @@ void main() {
   );
   test('empty differs from 400, 404 and connection errors', () async {
     final service = RatingsFixtureService()..items = [];
-    final vm = MyRatingsViewModel(service, DetailFixtureService());
+    final vm = MyRatingsViewModel(service, DetailFixtureService(), 1);
     await vm.load();
     expect(vm.status, MyRatingsLoadStatus.empty);
     for (final status in <int?>[400, 404, 500, null]) {
@@ -69,7 +69,19 @@ void main() {
         requestOptions: options,
         response: status == null
             ? null
-            : Response(requestOptions: options, statusCode: status),
+            : Response(
+                requestOptions: options,
+                statusCode: status,
+                data: {
+                  'isSuccess': false,
+                  'code': 'COMMON$status',
+                  'message': status == 400
+                      ? 'memberId 형식 오류'
+                      : status == 404
+                      ? '존재하지 않는 회원입니다.'
+                      : '요청에 실패했습니다.',
+                },
+              ),
       );
       await vm.load();
       expect(vm.status, MyRatingsLoadStatus.error);
@@ -80,7 +92,7 @@ void main() {
               ? 'memberId'
               : status == 404
               ? '존재하지'
-              : '잠시 후',
+              : '요청',
         ),
       );
     }
@@ -91,7 +103,7 @@ void main() {
     () async {
       final service = RatingsFixtureService()
         ..pending = Completer<List<RatingDto>>();
-      final vm = MyRatingsViewModel(service, DetailFixtureService());
+      final vm = MyRatingsViewModel(service, DetailFixtureService(), 1);
       final first = service.pending!;
       final old = vm.load();
       service.pending = null;

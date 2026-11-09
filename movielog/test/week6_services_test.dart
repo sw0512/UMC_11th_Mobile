@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:movielog/data/services/member_check_service.dart';
+import 'package:movielog/data/services/sign_up_service.dart';
 import 'package:movielog/data/services/rating_api_service.dart';
 import 'package:movielog/data/services/tmdb_movie_service.dart';
 
@@ -22,13 +22,13 @@ void main() {
         },
       ),
     );
-    final check = MemberCheckService(dio);
+    final check = SignUpService(dio);
     expect(await check.checkNickname(' 영화/광 '), false);
     expect(await check.checkEmail(' name+tag@example.com '), false);
     expect(await RatingApiService(dio).fetchMyRatings(1), isEmpty);
     expect(requests[0].uri.pathSegments.last, '영화/광');
     expect(requests[1].uri.pathSegments.last, 'name+tag@example.com');
-    expect(requests[2].path, '/v5/members/1/ratings');
+    expect(requests[2].path, '/v6/members/1/ratings');
     expect(
       requests.every(
         (r) => r.method == 'GET' && !r.headers.containsKey('Authorization'),

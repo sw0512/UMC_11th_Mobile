@@ -36,6 +36,9 @@ class TmdbFixtureService extends TmdbMovieService {
   };
   Completer<TmdbMoviePageDto>? pending;
   @override
+  Future<TmdbMovieDto> fetchMovieDetail(int movieId) async => movie(movieId);
+
+  @override
   Future<TmdbMoviePageDto> fetchPopular({int page = 1}) async {
     popularCalls++;
     if (fail) throw StateError('fixture failure');
