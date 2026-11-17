@@ -30,6 +30,12 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            // Opt-in isolated package for native integration tests; normal app data is preserved.
+            if (providers.gradleProperty("week8Probe").orNull == "true") {
+                applicationIdSuffix = ".week8probe"
+            }
+        }
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.

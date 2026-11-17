@@ -12,7 +12,7 @@ class SignUpService {
   Future<bool> _check(String field, String value) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/v6/members/$field/${Uri.encodeComponent(value.trim())}',
+        '/v7/members/$field/${Uri.encodeComponent(value.trim())}',
       );
       return CheckResult.fromJson(response.data!).available;
     } catch (e) {
@@ -27,7 +27,7 @@ class SignUpService {
   ) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/v6/members',
+        '/v7/members',
         data: request.toJson(),
       );
       final result = CommonResponse<SignUpResult>.fromJson(

@@ -74,7 +74,7 @@ RatingDto sampleRating(int id, int movieId, {String? comment}) => RatingDto(
 );
 
 class RatingsFixtureService extends RatingApiService {
-  RatingsFixtureService() : super(Dio());
+  RatingsFixtureService() : super(Dio(), Dio());
   List<RatingDto> items = [sampleRating(1, 550, comment: '좋은 영화')];
   DioException? failure;
   Completer<List<RatingDto>>? pending;
@@ -94,13 +94,9 @@ class RatingsFixtureService extends RatingApiService {
   }
 
   @override
-  Future<void> createRating({
-    required int memberId,
-    required CreateRatingRequest request,
-  }) async {
+  Future<RatingDto> createRating(CreateRatingRequest request) async {
     creates++;
     createRequests.add(request);
-    writeMembers.add(memberId);
     await beforeWrite();
     items = [
       ...items,
@@ -115,17 +111,16 @@ class RatingsFixtureService extends RatingApiService {
     if (failReadAfterWrite) {
       failure = DioException(requestOptions: RequestOptions(path: '/ratings'));
     }
+    return items.last;
   }
 
   @override
-  Future<void> updateRating({
-    required int memberId,
+  Future<RatingDto> updateRating({
     required int ratingId,
     required int score,
     String? comment,
   }) async {
     updates++;
-    writeMembers.add(memberId);
     await beforeWrite();
     items = items
         .map(
@@ -143,15 +138,12 @@ class RatingsFixtureService extends RatingApiService {
     if (failReadAfterWrite) {
       failure = DioException(requestOptions: RequestOptions(path: '/ratings'));
     }
+    return items.firstWhere((r) => r.ratingId == ratingId);
   }
 
   @override
-  Future<void> deleteRating({
-    required int memberId,
-    required int ratingId,
-  }) async {
+  Future<void> deleteRating(int ratingId) async {
     deletes.add(ratingId);
-    writeMembers.add(memberId);
     await beforeWrite();
     if (deleteFailures.contains(ratingId)) {
       throw const ApiFailure('삭제 실패', code: 'COMMON403', status: 403);

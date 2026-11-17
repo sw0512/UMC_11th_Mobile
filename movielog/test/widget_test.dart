@@ -1,64 +1,26 @@
-import 'package:provider/provider.dart';
-import 'package:movielog/view_models/sign_up_view_model.dart';
-
-import 'helpers/week6_fixture_services.dart';
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:movielog/main.dart';
+import 'package:movielog/view_models/auth_view_model.dart';
 
-import 'package:movielog/screens/sign_up_screen.dart';
+import 'helpers/auth_fixture.dart';
+import 'helpers/preference_test_store.dart';
 
 void main() {
-  testWidgets('renders the sign-up screen and enables submission', (
-    WidgetTester tester,
+  testWidgets('initial splash resolves to login when no stored token', (
+    tester,
   ) async {
-    await tester.pumpWidget(
-      ChangeNotifierProvider(
-        create: (_) => SignUpViewModel(CheckFixtureService()),
-        child: const MaterialApp(home: SignUpScreen()),
-      ),
+    resetPreferenceStore();
+    final storage = MemoryTokenStorage();
+    final auth = AuthViewModel(
+      AuthFixtureService(),
+      MemberFixtureService(),
+      storage,
     );
-
-    expect(find.text('회원가입'), findsOneWidget);
-    expect(find.text('환영합니다!\n간단한 정보만 입력하고 시작해보세요.'), findsOneWidget);
-    expect(find.text('필수 약관에 동의합니다'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextFormField).at(0), '무비로그');
-    await tester.enterText(
-      find.byType(TextFormField).at(1),
-      'movie@example.com',
-    );
-    await tester.enterText(find.byType(TextFormField).at(2), 'Password123!');
-    await tester.pump();
-    await tester.tap(find.text('중복 확인').at(0));
+    await tester.pumpWidget(MyApp(authViewModel: auth, tokenStorage: storage));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('중복 확인').at(1));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
-
-    final button = tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, '가입하기'),
-    );
-    expect(button.onPressed, isNotNull);
-
-    final passwordField = tester.widget<EditableText>(
-      find.byType(EditableText).at(2),
-    );
-    expect(passwordField.obscureText, isTrue);
-
-    await tester.tap(find.byTooltip('비밀번호 표시'));
-    await tester.pump();
-
-    final visiblePasswordField = tester.widget<EditableText>(
-      find.byType(EditableText).at(2),
-    );
-    expect(visiblePasswordField.obscureText, isFalse);
+    expect(find.byKey(const Key('login-email')), findsOneWidget);
+    expect(auth.status, AuthStatus.signedOut);
   });
 }

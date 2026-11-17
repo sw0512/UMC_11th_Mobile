@@ -126,7 +126,9 @@ class MyRatingsScreen extends StatelessWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Text('가입한 학습용 회원의 평점입니다.'),
+                  child: Text(
+                    '현재 로그인에서 새로 등록한 평점입니다.\n재시작 후 전체 목록 복원은 지원하지 않아요.',
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

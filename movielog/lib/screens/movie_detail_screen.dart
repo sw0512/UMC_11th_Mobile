@@ -78,9 +78,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: vm.memberId == null || busy
-                        ? null
-                        : showRatingDialog,
+                    onPressed: !vm.canRate || busy ? null : showRatingDialog,
                     icon: const Icon(Icons.rate_review_outlined),
                     label: const Text('평점 남기기'),
                   ),
@@ -183,10 +181,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 28),
-                    if (vm.memberId == null)
+                    if (!vm.canRate)
                       TextButton(
                         onPressed: () => context.go('/sign-up'),
-                        child: const Text('학습용 회원가입 후 평점을 남길 수 있어요.'),
+                        child: const Text('로그인 후 평점을 남길 수 있어요.'),
                       ),
                     const Text(
                       '영화 소개',

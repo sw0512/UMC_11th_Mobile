@@ -1,122 +1,83 @@
-import 'dart:async';
-
-import 'package:dio/dio.dart';
+import 'package:movielog/data/models/api_failure.dart';
+import 'package:movielog/view_models/auth_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:movielog/data/models/rating_dto.dart';
 import 'package:movielog/view_models/my_ratings_view_model.dart';
 
 import 'helpers/week6_fixture_services.dart';
+import 'helpers/auth_fixture.dart';
 
 void main() {
-  test('RatingDto accepts numeric values and null comment', () {
-    final dto = RatingDto.fromJson({
-      'ratingId': 1.0,
-      'movieId': 550,
-      'score': 5,
-      'comment': null,
-      'createdAt': '2026-11-03T00:00:00Z',
-    });
-    expect(dto.ratingId, 1);
-    expect(dto.comment, isNull);
-    expect(dto.createdAt.isUtc, true);
-  });
-  test('member 1 is fixed; repeated movies are fetched once and 404 preserves ratings', () async {
+  test(
+    'session ratings preserve unknown movies and share cached movie metadata',
+    () async {
+      final service = RatingsFixtureService()
+        ..items = [
+          sampleRating(1, 550),
+          sampleRating(2, 550),
+          sampleRating(3, 999),
+        ];
+      final movies = DetailFixtureService()..missing.add(999);
+      final store = seededRatings(service.items);
+      final vm = MyRatingsViewModel(service, movies, store);
+      await vm.load();
+      expect(service.members, isEmpty);
+      expect(movies.detailCalls, [550, 999]);
+      expect(vm.ratings.length, 3);
+      expect(vm.ratings.last.movie, isNull);
+      await vm.load();
+      expect(movies.detailCalls.length, 2);
+      await store.auth.logout();
+      expect(vm.ratings, isEmpty);
+      expect(store.items, isEmpty);
+      vm.dispose();
+      store.dispose();
+      store.auth.dispose();
+    },
+  );
+  test(
+    'partial delete retains failed selection and retries only failures',
+    () async {
+      final service = RatingsFixtureService()
+        ..items = [sampleRating(1, 550), sampleRating(2, 680)]
+        ..deleteFailures.add(2);
+      final store = seededRatings(service.items);
+      final vm = MyRatingsViewModel(service, DetailFixtureService(), store);
+      await vm.load();
+      vm.toggleEditing();
+      vm.toggleSelected(1);
+      vm.toggleSelected(2);
+      await vm.deleteSelected();
+      expect(vm.selectedRatingIds, {2});
+      expect(store.items.single.ratingId, 2);
+      service.deleteFailures.clear();
+      await vm.deleteSelected();
+      expect(service.deletes, [1, 2, 2]);
+      expect(vm.ratings, isEmpty);
+      vm.dispose();
+      store.dispose();
+      store.auth.dispose();
+    },
+  );
+  test('server RATING404 removes the vanished current-session card without guessing a memberId', () async {
     final service = RatingsFixtureService()
-      ..items = [
-        sampleRating(1, 550),
-        sampleRating(2, 550),
-        sampleRating(3, 999),
-      ];
-    final movies = DetailFixtureService()..missing.add(999);
-    final vm = MyRatingsViewModel(service, movies, 1);
-    await vm.load();
-    expect(service.members, [1]);
-    expect(movies.detailCalls, [550, 999]);
-    expect(vm.ratings.length, 3);
-    expect(vm.ratings.last.movie, isNull);
-    expect(vm.ratings.last.rating.movieId, 999);
-    expect(vm.status, MyRatingsLoadStatus.success);
-    expect(vm.message, isNotNull);
-    await vm.load();
-    expect(movies.detailCalls.length, 2);
-    vm.dispose();
-  });
-  test(
-    'transient TMDB failures are retried on next load without losing ratings',
-    () async {
-      final service = RatingsFixtureService()
-        ..items = [sampleRating(1, 550), sampleRating(2, 550)];
-      final movies = DetailFixtureService()..transient.add(550);
-      final vm = MyRatingsViewModel(service, movies, 1);
-      await vm.load();
-      expect(vm.ratings.length, 2);
-      expect(movies.detailCalls, [550]);
-      movies.transient.clear();
-      await vm.load();
-      expect(vm.ratings.first.movie, isNotNull);
-      expect(movies.detailCalls, [550, 550]);
-      vm.dispose();
-    },
-  );
-  test('empty differs from 400, 404 and connection errors', () async {
-    final service = RatingsFixtureService()..items = [];
-    final vm = MyRatingsViewModel(service, DetailFixtureService(), 1);
-    await vm.load();
-    expect(vm.status, MyRatingsLoadStatus.empty);
-    for (final status in <int?>[400, 404, 500, null]) {
-      final options = RequestOptions(path: '/ratings');
-      service.failure = DioException(
-        requestOptions: options,
-        response: status == null
-            ? null
-            : Response(
-                requestOptions: options,
-                statusCode: status,
-                data: {
-                  'isSuccess': false,
-                  'code': 'COMMON$status',
-                  'message': status == 400
-                      ? 'memberId 형식 오류'
-                      : status == 404
-                      ? '존재하지 않는 회원입니다.'
-                      : '요청에 실패했습니다.',
-                },
-              ),
+      ..writeFailure = const ApiFailure(
+        '없는 평점',
+        code: 'RATING404_1',
+        status: 404,
       );
-      await vm.load();
-      expect(vm.status, MyRatingsLoadStatus.error);
-      expect(
-        vm.message,
-        contains(
-          status == 400
-              ? 'memberId'
-              : status == 404
-              ? '존재하지'
-              : '요청',
-        ),
-      );
-    }
+    final store = seededRatings(service.items);
+    final vm = MyRatingsViewModel(service, DetailFixtureService(), store);
+    await vm.load();
+    await expectLater(
+      vm.updateRating(ratingId: 1, score: 5),
+      throwsA(isA<ApiFailure>()),
+    );
+    expect(store.items, isEmpty);
+    expect(vm.ratings, isEmpty);
+    expect(service.members, isEmpty);
+    expect(store.auth.status, AuthStatus.signedIn);
     vm.dispose();
+    store.dispose();
+    store.auth.dispose();
   });
-  test(
-    'older load and disposed view model cannot publish delayed data',
-    () async {
-      final service = RatingsFixtureService()
-        ..pending = Completer<List<RatingDto>>();
-      final vm = MyRatingsViewModel(service, DetailFixtureService(), 1);
-      final first = service.pending!;
-      final old = vm.load();
-      service.pending = null;
-      service.items = [];
-      await vm.load();
-      first.complete([sampleRating(1, 550)]);
-      await old;
-      expect(vm.status, MyRatingsLoadStatus.empty);
-      service.pending = Completer<List<RatingDto>>();
-      final pending = vm.load();
-      vm.dispose();
-      service.pending!.complete([]);
-      await pending;
-    },
-  );
 }

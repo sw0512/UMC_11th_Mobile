@@ -46,10 +46,18 @@ class _RatingDialogState extends State<RatingDialog> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
+      final error = ApiFailure.from(e);
       setState(() {
         _submitting = false;
-        _error = ApiFailure.from(e).message;
+        _error = error.status == 403 || error.status == 409
+            ? null
+            : error.message;
       });
+      if (error.status == 403 || error.status == 409) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(error.message)));
+      }
     }
   }
 

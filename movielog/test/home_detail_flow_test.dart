@@ -1,92 +1,63 @@
-import 'helpers/week6_fixture_services.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:movielog/main.dart';
-import 'package:movielog/router/app_router.dart';
+import 'package:movielog/screens/home_screen.dart';
 import 'package:movielog/widgets/movie_rating_input.dart';
-import 'package:movielog/widgets/tmdb_movie_card.dart';
 
-import 'helpers/preference_test_store.dart';
+import 'helpers/auth_fixture.dart';
+import 'helpers/week6_fixture_services.dart';
 import 'helpers/tmdb_fixture_service.dart';
+import 'helpers/preference_test_store.dart';
 
 void main() {
   setUp(resetPreferenceStore);
-  testWidgets('signup navigates to movies and opens detail with TMDB ID', (
+  testWidgets(
+    'signed in direct detail loads real DTO id and preserves dialog cancellation',
+    (tester) async {
+      final service = RatingsFixtureService();
+      await tester.pumpWidget(
+        MyApp(
+          authViewModel: signedInAuth(),
+          restoreOnStart: false,
+          initialLocation: '/movies/550',
+          movieService: TmdbFixtureService(),
+          ratingService: service,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('영화 소개'), findsOneWidget);
+      await tester.tap(find.text('평점 남기기'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<MovieRatingInput>(find.byType(MovieRatingInput)).movieId,
+        550,
+      );
+      await tester.tap(find.text('취소'));
+      await tester.pumpAndSettle();
+      expect(service.creates, 0);
+    },
+  );
+  testWidgets('logout prevents navigating back to protected detail', (
     tester,
   ) async {
+    final auth = signedInAuth();
     await tester.pumpWidget(
       MyApp(
+        authViewModel: auth,
+        restoreOnStart: false,
+        initialLocation: '/home',
         movieService: TmdbFixtureService(),
-        signUpService: CheckFixtureService(),
-      ),
-    );
-
-    expect(find.text('시작하기'), findsOneWidget);
-    await tester.tap(find.text('시작하기'));
-    await tester.pumpAndSettle();
-    expect(AppRouter.router.canPop(), isFalse);
-
-    await tester.enterText(find.byType(TextFormField).at(0), '무비러버');
-    await tester.enterText(
-      find.byType(TextFormField).at(1),
-      'movie@example.com',
-    );
-    await tester.enterText(find.byType(TextFormField).at(2), 'Password123!');
-    await tester.pump();
-    await tester.tap(find.text('중복 확인').at(0));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('중복 확인').at(1));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byType(Checkbox));
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
-    final submit = find.widgetWithText(ElevatedButton, '가입하기');
-    await tester.ensureVisible(submit);
-    await tester.tap(submit);
-    await tester.pumpAndSettle();
-    expect(AppRouter.router.canPop(), isFalse);
-
-    expect(find.text('영화 101'), findsOneWidget);
-
-    final card = find.byType(TmdbMovieCard).first;
-    await tester.tapAt(tester.getTopLeft(card) + const Offset(20, 20));
-    await tester.pumpAndSettle();
-
-    expect(find.text('영화 소개'), findsOneWidget);
-    expect(find.byTooltip('뒤로가기'), findsOneWidget);
-    await tester.tap(find.text('평점 남기기'));
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<MovieRatingInput>(find.byType(MovieRatingInput)).movieId,
-      101,
-    );
-    await tester.tap(find.text('취소'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('뒤로가기'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('어떤 영화를 찾고 있나요?'), findsOneWidget);
-  });
-
-  testWidgets('direct detail navigation falls back to the movie list', (
-    tester,
-  ) async {
-    AppRouter.router.go('/movies/1');
-    await tester.pumpWidget(
-      MyApp(
-        movieService: TmdbFixtureService(),
-        signUpService: CheckFixtureService(),
       ),
     );
     await tester.pumpAndSettle();
-    expect(AppRouter.router.canPop(), isFalse);
-    await tester.tap(find.byTooltip('뒤로가기'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+    final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
+    await auth.logout();
     await tester.pumpAndSettle();
-    expect(find.text('어떤 영화를 찾고 있나요?'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('login-email')), findsOneWidget);
+    router.go('/movies/550');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('login-email')), findsOneWidget);
+    expect(find.text('영화 소개'), findsNothing);
   });
 }

@@ -29,7 +29,11 @@ class ApiFailure implements Exception {
     }
     return const ApiFailure('서버 응답을 확인하지 못했습니다. 다시 시도해 주세요.');
   }
-  bool get shouldRefresh => code == 'COMMON403' || code == 'COMMON404';
+  bool get shouldRefresh =>
+      code == 'COMMON403' ||
+      code == 'COMMON404' ||
+      code == 'MEMBER404_1' ||
+      code == 'RATING404_1';
   @override
   String toString() => message;
 }

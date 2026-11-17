@@ -5,7 +5,7 @@ import 'package:movielog/data/services/rating_api_service.dart';
 import 'package:movielog/data/services/tmdb_movie_service.dart';
 
 void main() {
-  test('v5 services parse direct bodies and URI encode path values without adding TMDB authorization', () async {
+  test('v7 public services parse direct bodies and URI encode path values without adding TMDB authorization', () async {
     final dio = Dio();
     final requests = <RequestOptions>[];
     dio.interceptors.add(
@@ -25,10 +25,10 @@ void main() {
     final check = SignUpService(dio);
     expect(await check.checkNickname(' 영화/광 '), false);
     expect(await check.checkEmail(' name+tag@example.com '), false);
-    expect(await RatingApiService(dio).fetchMyRatings(1), isEmpty);
+    expect(await RatingApiService(dio, dio).fetchMyRatings(1), isEmpty);
     expect(requests[0].uri.pathSegments.last, '영화/광');
     expect(requests[1].uri.pathSegments.last, 'name+tag@example.com');
-    expect(requests[2].path, '/v6/members/1/ratings');
+    expect(requests[2].path, '/v7/members/1/ratings');
     expect(
       requests.every(
         (r) => r.method == 'GET' && !r.headers.containsKey('Authorization'),
