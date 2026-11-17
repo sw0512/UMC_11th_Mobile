@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -20,7 +21,7 @@ class LoginGuide extends StatelessWidget {
 
         TextButton(
           onPressed: () {
-            debugPrint('로그인 버튼 클릭');
+            context.go('/login');
           },
           style: TextButton.styleFrom(
             minimumSize: Size.zero,

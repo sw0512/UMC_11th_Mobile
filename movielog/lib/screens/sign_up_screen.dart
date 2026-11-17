@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../view_models/sign_up_view_model.dart';
 import '../widgets/movielog_button.dart';
 import '../data/models/create_member_request.dart';
-import '../view_models/learning_member_session.dart';
+
 import '../view_models/submit_status.dart';
 
 import '../theme/app_colors.dart';
@@ -68,9 +68,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
     if (!mounted) return;
     if (vm.submitStatus == SubmitStatus.success && vm.createdMemberId != null) {
-      context.read<LearningMemberSession>().setMemberId(vm.createdMemberId!);
       passwordController.clear();
-      context.go('/movies');
+      context.go('/login');
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(const SnackBar(content: Text('회원가입이 완료됐어요. 로그인해 주세요.')));
     } else if (vm.snackbarMessage != null) {
       ScaffoldMessenger.of(context)
         ..clearSnackBars()

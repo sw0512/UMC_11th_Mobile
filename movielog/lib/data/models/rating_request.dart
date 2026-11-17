@@ -29,10 +29,6 @@ class CreateRatingRequest {
     if (movieId < 1) throw ArgumentError('올바른 영화 ID가 필요합니다.');
     validateServerScore(score.toDouble());
     final text = normalizedComment(comment);
-    return {
-      'movieId': movieId,
-      'score': score,
-      'comment': ?text,
-    };
+    return {'movieId': movieId, 'score': score, 'comment': ?text};
   }
 }

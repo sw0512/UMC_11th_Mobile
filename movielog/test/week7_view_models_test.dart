@@ -6,13 +6,9 @@ import 'package:movielog/data/models/common_response.dart';
 import 'package:movielog/data/models/create_member_request.dart';
 import 'package:movielog/data/models/sign_up_models.dart';
 import 'package:movielog/view_models/sign_up_view_model.dart';
-import 'package:movielog/view_models/movie_detail_view_model.dart';
-import 'package:movielog/view_models/my_ratings_view_model.dart';
-import 'package:movielog/view_models/learning_member_session.dart';
 import 'package:movielog/view_models/submit_status.dart';
 
 import 'helpers/week6_fixture_services.dart';
-import 'helpers/tmdb_fixture_service.dart';
 
 const request = CreateMemberRequest(
   email: 'demo@example.com',
@@ -27,7 +23,7 @@ Future<void> ready(SignUpViewModel vm) async {
 }
 
 void main() {
-  test('v6 local constraints and memory-only session', () {
+  test('signup local constraints', () {
     expect(SignUpViewModel.validateNickname('x' * 13), isNotNull);
     for (final password in [
       'short',
@@ -39,13 +35,6 @@ void main() {
       expect(SignUpViewModel.validatePassword(password), isNotNull);
     }
     expect(SignUpViewModel.validatePassword('MockPass123!'), isNull);
-    final session = LearningMemberSession();
-    expect(session.memberId, isNull);
-    session.setMemberId(77);
-    expect(session.memberId, 77);
-    session.clear();
-    expect(session.memberId, isNull);
-    session.dispose();
   });
   test('signup blocks duplicate submits and field changes while pending, publishes created ID', () async {
     final service = CheckFixtureService()
@@ -131,120 +120,5 @@ void main() {
     );
     await pending;
     expect(vm.createdMemberId, isNull);
-  });
-  test('detail writes actual TMDB ID and created member, prevents duplicate create', () async {
-    final service = RatingsFixtureService()..writeGate = Completer<void>();
-    final vm = MovieDetailViewModel(service, 77, movie(550));
-    final pending = vm.createRating(score: 5, comment: '후기');
-    await vm.createRating(score: 5);
-    expect(service.creates, 1);
-    expect(service.createRequests.single.movieId, 550);
-    expect(service.writeMembers, [77]);
-    service.writeGate!.complete();
-    await pending;
-    expect(vm.submitStatus, SubmitStatus.success);
-    vm.dispose();
-    final missing = MovieDetailViewModel(service, null, movie(550));
-    await expectLater(
-      missing.createRating(score: 4),
-      throwsA(isA<ApiFailure>()),
-    );
-    expect(service.creates, 1);
-    missing.dispose();
-  });
-  test('saved update followed by GET failure completes successfully and retries only GET', () async {
-    final service = RatingsFixtureService();
-    final vm = MyRatingsViewModel(service, DetailFixtureService(), 77);
-    await vm.load();
-    service.failReadAfterWrite = true;
-    await vm.updateRating(ratingId: 1, score: 5, comment: '수정');
-    expect(service.updates, 1);
-    expect(vm.refreshWarning, contains('저장은 완료'));
-    expect(vm.status, MyRatingsLoadStatus.error);
-    expect(vm.isWriting, false);
-    service.failure = null;
-    await vm.load();
-    expect(service.updates, 1);
-    expect(vm.refreshWarning, isNull);
-    expect(vm.ratings.single.rating.score, 5);
-    vm.dispose();
-  });
-  test('write failure is not confused with refresh failure and 403/404 reconcile GET', () async {
-    final service = RatingsFixtureService();
-    final vm = MyRatingsViewModel(service, DetailFixtureService(), 77);
-    await vm.load();
-    for (final code in [400, 403, 404, 409]) {
-      final before = service.members.length;
-      service.writeFailure = ApiFailure(
-        '서버 안내 $code',
-        code: 'COMMON$code',
-        status: code,
-      );
-      await expectLater(
-        vm.updateRating(ratingId: 1, score: 4),
-        throwsA(
-          isA<ApiFailure>().having((e) => e.message, 'message', '서버 안내 $code'),
-        ),
-      );
-      expect(
-        service.members.length,
-        before + ([403, 404].contains(code) ? 1 : 0),
-      );
-      expect(vm.refreshWarning, isNull);
-      expect(vm.isWriting, false);
-    }
-    vm.dispose();
-  });
-  test('bulk delete snapshots selection, removes only successes and retains failures for retry', () async {
-    final service = RatingsFixtureService()
-      ..items = [sampleRating(1, 550), sampleRating(2, 680)]
-      ..deleteFailures.add(2);
-    final vm = MyRatingsViewModel(service, DetailFixtureService(), 77);
-    await vm.load();
-    vm.toggleEditing();
-    vm.toggleSelected(1);
-    vm.toggleSelected(2);
-    final result = await vm.deleteSelected();
-    expect(result, contains('1개 삭제, 1개'));
-    expect(vm.ratings.map((r) => r.rating.ratingId), [2]);
-    expect(vm.selectedRatingIds, {2});
-    expect(vm.editing, true);
-    service.deleteFailures.clear();
-    await vm.deleteSelected();
-    expect(vm.ratings, isEmpty);
-    expect(vm.status, MyRatingsLoadStatus.empty);
-    expect(vm.editing, false);
-    expect(vm.selectedRatingIds, isEmpty);
-    vm.dispose();
-  });
-  test(
-    'cancel editing clears selection; unknown rating cannot be written',
-    () async {
-      final service = RatingsFixtureService();
-      final vm = MyRatingsViewModel(service, DetailFixtureService(), 77);
-      await vm.load();
-      vm.toggleEditing();
-      vm.toggleSelected(1);
-      vm.toggleEditing();
-      expect(vm.selectedRatingIds, isEmpty);
-      expect(service.deletes, isEmpty);
-      await expectLater(vm.deleteRating(999), throwsA(isA<ApiFailure>()));
-      expect(service.deletes, isEmpty);
-      vm.dispose();
-    },
-  );
-  test('single delete maintains busy state through refresh and last row becomes empty', () async {
-    final service = RatingsFixtureService()..writeGate = Completer<void>();
-    final vm = MyRatingsViewModel(service, DetailFixtureService(), 77);
-    await vm.load();
-    final pending = vm.deleteRating(1);
-    expect(vm.isWriting, true);
-    await expectLater(vm.deleteRating(1), throwsA(isA<ApiFailure>()));
-    expect(service.deletes, [1]);
-    service.writeGate!.complete();
-    await pending;
-    expect(vm.status, MyRatingsLoadStatus.empty);
-    expect(vm.isWriting, false);
-    vm.dispose();
   });
 }

@@ -11,6 +11,10 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
+    # Historical local capture scripts target older APIs and are not app sources.
+    - tool/capture_week5.dart
+    - tool/capture_week6.dart
+    - tool/capture_week7.dart
     - build/**
     - android/**
     - ios/**

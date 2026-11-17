@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
-
-import 'core/network/movie_log_client.dart';
-import 'data/services/sign_up_service.dart';
-import 'view_models/learning_member_session.dart';
-import 'data/services/rating_api_service.dart';
-
-import 'core/network/tmdb_client.dart';
-import 'data/services/tmdb_movie_service.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
-import 'theme/app_theme.dart';
-
-import 'package:flutter_svg/flutter_svg.dart';
-
+import 'core/network/movie_log_client.dart';
+import 'core/network/tmdb_client.dart';
+import 'core/storage/token_storage.dart';
+import 'data/services/sign_up_service.dart';
+import 'data/services/rating_api_service.dart';
+import 'data/services/tmdb_movie_service.dart';
+import 'data/services/auth_api_service.dart';
+import 'data/services/member_api_service.dart';
+import 'view_models/auth_view_model.dart';
+import 'view_models/session_ratings.dart';
+import 'services/email_preference.dart';
 import 'router/app_router.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,132 +30,133 @@ class MyApp extends StatelessWidget {
     super.key,
     this.movieService,
     this.signUpService,
-    this.learningSession,
     this.ratingService,
+    this.authViewModel,
+    this.memberApiService,
+    this.tokenStorage,
+    this.emailPreference,
+    this.initialLocation = '/start',
+    this.restoreOnStart = true,
   });
-
   final TmdbMovieService? movieService;
   final SignUpService? signUpService;
-  final LearningMemberSession? learningSession;
   final RatingApiService? ratingService;
-
+  final AuthViewModel? authViewModel;
+  final MemberApiService? memberApiService;
+  final TokenStorage? tokenStorage;
+  final EmailPreference? emailPreference;
+  final String initialLocation;
+  final bool restoreOnStart;
   @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<LearningMemberSession>(
-          create: (_) => learningSession ?? LearningMemberSession(),
-        ),
-        Provider<Dio>(
-          create: (_) => createMovieLogClient(),
-          dispose: (_, client) => client.close(force: true),
-        ),
-        Provider<SignUpService>(
-          create: (context) =>
-              signUpService ?? SignUpService(context.read<Dio>()),
-        ),
-        Provider<RatingApiService>(
-          create: (context) =>
-              ratingService ?? RatingApiService(context.read<Dio>()),
-        ),
-        Provider<TmdbMovieService>(
-          create: (_) => movieService ?? TmdbMovieService(createTmdbClient()),
-        ),
-      ],
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        routerConfig: AppRouter.router,
-        theme: AppTheme.light,
+  Widget build(BuildContext context) => MultiProvider(
+    providers: [
+      Provider<TokenStorage>(
+        create: (_) =>
+            tokenStorage ?? SecureTokenStorage(const FlutterSecureStorage()),
       ),
+      Provider<EmailPreference>(
+        create: (_) => emailPreference ?? EmailPreference(),
+      ),
+      Provider<_Services>(
+        create: (c) => _Services(c.read<TokenStorage>(), authViewModel),
+        dispose: (_, s) => s.close(),
+      ),
+      Provider<SignUpService>(
+        create: (c) =>
+            signUpService ?? SignUpService(c.read<_Services>().publicClient),
+      ),
+      Provider<MemberApiService>(
+        create: (c) => memberApiService ?? c.read<_Services>().member,
+      ),
+      Provider<RatingApiService>(
+        create: (c) =>
+            ratingService ??
+            RatingApiService(
+              c.read<_Services>().publicClient,
+              c.read<_Services>().authClient,
+              sessionVersion: () => c.read<AuthViewModel>().sessionVersion,
+            ),
+      ),
+      Provider<TmdbMovieService>(
+        create: (_) => movieService ?? TmdbMovieService(createTmdbClient()),
+      ),
+      ChangeNotifierProvider<AuthViewModel>(
+        create: (c) => c.read<_Services>().auth,
+      ),
+      ChangeNotifierProvider<SessionRatings>(
+        create: (c) => SessionRatings(c.read<AuthViewModel>()),
+      ),
+    ],
+    child: _RouterApp(
+      initialLocation: initialLocation,
+      restoreOnStart: restoreOnStart,
+    ),
+  );
+}
+
+class _Services {
+  _Services(TokenStorage storage, AuthViewModel? injected) {
+    authClient = createAuthMovieLogClient(
+      storage,
+      sessionVersion: () => auth.sessionVersion,
+      onExpired: (v) => auth.expireSession(expectedVersion: v),
     );
+    member = MemberApiService(
+      authClient,
+      sessionVersion: () => auth.sessionVersion,
+    );
+    auth =
+        injected ??
+        AuthViewModel(AuthApiService(publicClient), member, storage);
+  }
+  final publicClient = createMovieLogClient();
+  late final Dio authClient;
+  late final MemberApiService member;
+  late final AuthViewModel auth;
+  void close() {
+    publicClient.close(force: true);
+    authClient.close(force: true);
   }
 }
 
-class StartScreen extends StatelessWidget {
-  const StartScreen({super.key});
+class _RouterApp extends StatefulWidget {
+  const _RouterApp({
+    required this.initialLocation,
+    required this.restoreOnStart,
+  });
+  final String initialLocation;
+  final bool restoreOnStart;
+  @override
+  State<_RouterApp> createState() => _RouterAppState();
+}
+
+class _RouterAppState extends State<_RouterApp> {
+  late final GoRouter _router;
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthViewModel>();
+    _router = AppRouter.createRouter(
+      auth,
+      initialLocation: widget.initialLocation,
+    );
+    if (widget.restoreOnStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) auth.restoreSession();
+      });
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    const purple = Color(0xFF593C98);
-    const background = Color(0xFFFAF8F4);
-
-    return Scaffold(
-      backgroundColor: background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 0),
-
-              const Text(
-                'FLUTTER 0주차',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF55515D),
-                  letterSpacing: 1.2,
-                ),
-              ),
-
-              const SizedBox(height: 45),
-
-              SvgPicture.asset(
-                'assets/logos/movielog_logo.svg',
-                width: 72,
-                height: 72,
-                semanticsLabel: 'MovieLog 로고',
-              ),
-
-              const SizedBox(height: 55),
-
-              const Text(
-                '영화의 순간을\n기록하세요',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 32,
-                  height: 1.3,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1D1D1B),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                '보고 싶은 영화부터 나만의 평점까지\n한곳에서 관리해요',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 17,
-                  height: 1.5,
-                  color: Color(0xFF55515D),
-                ),
-              ),
-
-              const Spacer(),
-
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => context.go('/sign-up'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: purple,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: const Text('시작하기', style: TextStyle(fontSize: 18)),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
+  Widget build(BuildContext context) => MaterialApp.router(
+    debugShowCheckedModeBanner: false,
+    title: 'MovieLog',
+    routerConfig: _router,
+    theme: AppTheme.light,
+  );
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
   }
 }

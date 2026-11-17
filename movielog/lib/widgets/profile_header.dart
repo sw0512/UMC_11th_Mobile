@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+
+import 'package:provider/provider.dart';
+
+import '../view_models/auth_view_model.dart';
 import '../theme/app_text_styles.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -27,8 +31,8 @@ class ProfileHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          '무비러버',
+        Text(
+          context.watch<AuthViewModel>().member?.nickname ?? '',
           style: TextStyle(
             color: AppColors.black,
             fontSize: 30,
@@ -36,8 +40,9 @@ class ProfileHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        Text(context.watch<AuthViewModel>().member?.joinedLabel ?? ''),
         Text(
-          '매주 주말엔 영화관으로 출근하는 프로 관람객. 좋은 영화를 보고 기록하는 것을 좋아합니다.',
+          context.watch<AuthViewModel>().member?.email ?? '',
           textAlign: TextAlign.center,
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.gray),
         ),

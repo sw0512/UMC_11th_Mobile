@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../data/models/tmdb_movie_dto.dart';
@@ -6,71 +5,77 @@ import '../data/models/rating_with_movie.dart';
 import '../data/services/rating_api_service.dart';
 import '../data/services/tmdb_movie_service.dart';
 import '../data/models/api_failure.dart';
+import 'auth_view_model.dart';
+import 'session_ratings.dart';
 
 enum MyRatingsLoadStatus { idle, loading, success, empty, error }
 
 class MyRatingsViewModel extends ChangeNotifier {
-  MyRatingsViewModel(this._service, this._movieService, this.memberId);
-  final int memberId;
+  MyRatingsViewModel(this._service, this._movieService, this.session) {
+    session.addListener(_changed);
+  }
   final RatingApiService _service;
   final TmdbMovieService _movieService;
+  final SessionRatings session;
+  AuthViewModel get auth => session.auth;
   final Map<int, TmdbMovieDto?> _cache = {};
   List<RatingWithMovie> ratings = const [];
   MyRatingsLoadStatus status = MyRatingsLoadStatus.idle;
   String? message;
   bool _disposed = false;
   int _version = 0;
+  void _changed() {
+    if (auth.status != AuthStatus.signedIn) {
+      ratings = const [];
+      _selected.clear();
+      editing = false;
+      _version++;
+      if (!_disposed) notifyListeners();
+    } else if (!isWriting) {
+      load();
+    }
+  }
+
   Future<void> load({bool afterWrite = false}) async {
     if (_disposed || (isWriting && !afterWrite)) return;
     final version = ++_version;
+    final sessionVersion = auth.sessionVersion;
     status = MyRatingsLoadStatus.loading;
     message = null;
     notifyListeners();
-    try {
-      final raw = await _service.fetchMyRatings(memberId);
-      if (_disposed || version != _version) return;
-      final entries = <RatingWithMovie>[];
-      final attempted = <int>{};
-      var missing = 0;
-      for (final rating in raw) {
-        if (_disposed || version != _version) return;
-        if (!_cache.containsKey(rating.movieId) &&
-            attempted.add(rating.movieId)) {
-          try {
-            final movie = await _movieService.findMovieById(rating.movieId);
-            if (_disposed || version != _version) return;
-            _cache[rating.movieId] = movie;
-          } on DioException {
-            /* Transient failures are retried on the next load. */
+    final entries = <RatingWithMovie>[];
+    final attempted = <int>{};
+    for (final rating in session.items) {
+      if (!_cache.containsKey(rating.movieId) &&
+          attempted.add(rating.movieId)) {
+        try {
+          final movie = await _movieService.findMovieById(rating.movieId);
+          if (_disposed ||
+              version != _version ||
+              !auth.isCurrent(sessionVersion)) {
+            return;
           }
+          _cache[rating.movieId] = movie;
+        } catch (_) {
+          /* Keep the rating even when TMDB is unavailable; retry metadata later. */
         }
-        final movie = _cache[rating.movieId];
-        if (movie == null) missing++;
-        entries.add(RatingWithMovie(rating: rating, movie: movie));
       }
-      if (_disposed || version != _version) return;
-      ratings = List.unmodifiable(entries);
-      refreshWarning = null;
-      final ids = entries.map((r) => r.rating.ratingId).toSet();
-      _selected.removeWhere((id) => !ids.contains(id));
-      status = ratings.isEmpty
-          ? MyRatingsLoadStatus.empty
-          : MyRatingsLoadStatus.success;
-      if (missing > 0) message = '일부 영화 정보를 가져오지 못해 제목·포스터를 대신 표시합니다.';
-    } on ApiFailure catch (error) {
-      if (_disposed || version != _version) return;
-      status = MyRatingsLoadStatus.error;
-      message = error.message;
-    } on DioException catch (error) {
-      if (_disposed || version != _version) return;
-      status = MyRatingsLoadStatus.error;
-      message = writeMyRatingsErrorMessage(error);
-    } catch (_) {
-      if (_disposed || version != _version) return;
-      status = MyRatingsLoadStatus.error;
-      message = '평점 응답을 처리하지 못했습니다. 다시 시도해 주세요.';
+      entries.add(
+        RatingWithMovie(rating: rating, movie: _cache[rating.movieId]),
+      );
     }
-    if (!_disposed && version == _version) notifyListeners();
+    if (_disposed || version != _version || !auth.isCurrent(sessionVersion)) {
+      return;
+    }
+    ratings = List.unmodifiable(entries);
+    if (entries.any((r) => r.movie == null)) {
+      message = '일부 영화 정보를 가져오지 못해 제목·포스터를 대신 표시합니다.';
+    }
+    _selected.removeWhere((id) => !entries.any((r) => r.rating.ratingId == id));
+    status = ratings.isEmpty
+        ? MyRatingsLoadStatus.empty
+        : MyRatingsLoadStatus.success;
+    notifyListeners();
   }
 
   bool isWriting = false;
@@ -90,7 +95,7 @@ class MyRatingsViewModel extends ChangeNotifier {
     if (_disposed ||
         isWriting ||
         !editing ||
-        !ratings.any((r) => r.rating.ratingId == id)) {
+        !session.items.any((r) => r.ratingId == id)) {
       return;
     }
     if (!_selected.add(id)) _selected.remove(id);
@@ -98,45 +103,35 @@ class MyRatingsViewModel extends ChangeNotifier {
   }
 
   void _requireOwned(int id) {
-    if (!ratings.any((r) => r.rating.ratingId == id)) {
-      throw const ApiFailure(
-        '현재 회원의 평점만 변경할 수 있습니다.',
-        code: 'COMMON403',
-        status: 403,
-      );
+    if (auth.status != AuthStatus.signedIn ||
+        !session.items.any((r) => r.ratingId == id)) {
+      throw const ApiFailure('현재 로그인에서 등록한 평점만 변경할 수 있습니다.');
     }
   }
 
-  Future<void> _refreshAfterWrite() async {
-    await load(afterWrite: true);
-    if (_disposed) return;
-    if (status == MyRatingsLoadStatus.error) {
-      refreshWarning = '저장은 완료됐지만 목록을 불러오지 못했습니다. 조회만 다시 시도해 주세요.';
-    }
-    notifyListeners();
-  }
-
-  Future<void> _write(Future<void> Function() action, {int? deletingId}) async {
+  Future<void> _write(
+    Future<void> Function(int) action, {
+    required int ratingId,
+  }) async {
     if (_disposed || isWriting) throw const ApiFailure('요청을 처리 중입니다.');
+    final version = auth.sessionVersion;
     isWriting = true;
     writeMessage = null;
     notifyListeners();
     try {
-      await action();
-      if (_disposed) return;
-      if (deletingId != null) {
-        ratings = List.unmodifiable(
-          ratings.where((r) => r.rating.ratingId != deletingId),
-        );
-        _selected.remove(deletingId);
-      }
-      await _refreshAfterWrite();
+      await action(version);
+      if (!auth.isCurrent(version)) throw const ApiFailure('세션이 변경됐습니다.');
+      await load(afterWrite: true);
     } catch (e) {
+      await auth.handleFailure(e, version);
       if (_disposed) return;
-      final error = ApiFailure.from(e);
-      writeMessage = error.message;
-      if (error.shouldRefresh) await load(afterWrite: true);
-      throw error;
+      writeMessage = ApiFailure.from(e).message;
+      if (ApiFailure.from(e).code == 'RATING404_1' && auth.isCurrent(version)) {
+        session.remove(ratingId, version);
+        await load(afterWrite: true);
+        writeMessage = '서버에서 없어진 평점을 현재 세션 목록에서 제외했습니다.';
+      }
+      throw ApiFailure.from(e);
     } finally {
       if (!_disposed) {
         isWriting = false;
@@ -151,22 +146,22 @@ class MyRatingsViewModel extends ChangeNotifier {
     String? comment,
   }) async {
     _requireOwned(ratingId);
-    await _write(
-      () => _service.updateRating(
-        memberId: memberId,
+    await _write((version) async {
+      final updated = await _service.updateRating(
         ratingId: ratingId,
         score: score,
         comment: comment,
-      ),
-    );
+      );
+      session.upsert(updated, version);
+    }, ratingId: ratingId);
   }
 
   Future<void> deleteRating(int ratingId) async {
     _requireOwned(ratingId);
-    await _write(
-      () => _service.deleteRating(memberId: memberId, ratingId: ratingId),
-      deletingId: ratingId,
-    );
+    await _write((version) async {
+      await _service.deleteRating(ratingId);
+      session.remove(ratingId, version);
+    }, ratingId: ratingId);
   }
 
   Future<String> deleteSelected() async {
@@ -175,37 +170,30 @@ class MyRatingsViewModel extends ChangeNotifier {
     for (final id in ids) {
       _requireOwned(id);
     }
+    final version = auth.sessionVersion;
     isWriting = true;
-    writeMessage = null;
     notifyListeners();
-    final succeeded = <int>{};
-    final failed = <int>{};
+    var success = 0;
     try {
       for (final id in ids) {
-        if (_disposed) return '';
+        if (_disposed || !auth.isCurrent(version)) return '';
         try {
-          await _service.deleteRating(memberId: memberId, ratingId: id);
-          succeeded.add(id);
-        } catch (_) {
-          failed.add(id);
+          await _service.deleteRating(id);
+          if (!auth.isCurrent(version)) return '';
+          session.remove(id, version);
+          _selected.remove(id);
+          success++;
+        } catch (e) {
+          await auth.handleFailure(e, version);
+          if (!auth.isCurrent(version)) return '';
         }
       }
-      if (_disposed) return '';
-      ratings = List.unmodifiable(
-        ratings.where((r) => !succeeded.contains(r.rating.ratingId)),
-      );
-      _selected.removeAll(succeeded);
-      await _refreshAfterWrite();
-      if (_disposed) return '';
-      final existing = ratings.map((r) => r.rating.ratingId).toSet();
-      _selected.removeWhere((id) => !existing.contains(id));
-      if (failed.isEmpty) {
-        editing = false;
-        _selected.clear();
-      }
-      writeMessage = failed.isEmpty
-          ? '${succeeded.length}개의 평점을 삭제했습니다.'
-          : '${succeeded.length}개 삭제, ${failed.length}개 삭제에 실패했습니다. 실패한 항목을 다시 시도해 주세요.';
+      if (_disposed || !auth.isCurrent(version)) return '';
+      await load(afterWrite: true);
+      if (_selected.isEmpty) editing = false;
+      writeMessage = _selected.isEmpty
+          ? '$success개의 평점을 삭제했습니다.'
+          : '$success개 삭제, ${_selected.length}개 실패했습니다. 실패한 항목만 다시 시도해 주세요.';
       return writeMessage!;
     } finally {
       if (!_disposed) {
@@ -219,6 +207,7 @@ class MyRatingsViewModel extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _version++;
+    session.removeListener(_changed);
     super.dispose();
   }
 }

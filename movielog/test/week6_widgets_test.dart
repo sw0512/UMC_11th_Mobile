@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:movielog/main.dart';
-import 'package:movielog/router/app_router.dart';
 import 'package:movielog/screens/sign_up_screen.dart';
 import 'package:movielog/view_models/sign_up_view_model.dart';
 import 'package:movielog/widgets/movielog_button.dart';
 
 import 'helpers/week6_fixture_services.dart';
 
-import 'package:movielog/view_models/learning_member_session.dart';
+import 'helpers/auth_fixture.dart';
+import 'helpers/preference_test_store.dart';
 
 void main() {
   testWidgets(
@@ -111,11 +111,13 @@ void main() {
   testWidgets(
     'ratings opens above profile without bottom tabs and back restores profile',
     (tester) async {
-      AppRouter.router.go('/my');
+      resetPreferenceStore();
       await tester.pumpWidget(
         MyApp(
           movieService: DetailFixtureService(),
-          learningSession: LearningMemberSession()..setMemberId(77),
+          authViewModel: signedInAuth(),
+          restoreOnStart: false,
+          initialLocation: '/my',
           ratingService: RatingsFixtureService(),
         ),
       );
@@ -129,9 +131,8 @@ void main() {
       await tester.tap(find.text('내가 등록한 평점'));
       await tester.pumpAndSettle();
       expect(find.byType(NavigationBar), findsNothing);
-      expect(find.text('가입한 학습용 회원의 평점입니다.'), findsOneWidget);
-      expect(find.text('영화 550'), findsOneWidget);
-      expect(find.text('별점 4 / 5'), findsOneWidget);
+      expect(find.textContaining('현재 로그인에서'), findsOneWidget);
+      expect(find.text('등록된 평점이 없어요.'), findsOneWidget);
       await tester.tap(find.byTooltip('마이페이지로 돌아가기'));
       await tester.pumpAndSettle();
       expect(find.byType(NavigationBar), findsOneWidget);
